@@ -1,3 +1,67 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Art Social is a Laravel 12 + Vue 3 full-stack SPA built with Inertia.js v2. Authentication is handled by Laravel Fortify (headless). The frontend uses shadcn-vue (reka-ui) components with Tailwind CSS v4. Route generation for the frontend is handled by Laravel Wayfinder.
+
+## Common Commands
+
+### Development
+- `composer run dev` — starts server, queue worker, log tail (Pail), and Vite concurrently
+- `npm run dev` — Vite dev server only
+- `npm run build` — production build
+
+### Testing
+- `php artisan test --compact` — run full test suite
+- `php artisan test --compact --filter=TestName` — run specific test
+- `php artisan test --compact tests/Feature/Auth/LoginTest.php` — run specific file
+
+### Linting & Formatting
+- `vendor/bin/pint --dirty --format agent` — format changed PHP files (run before finalizing changes)
+- `npm run lint` — ESLint with auto-fix
+- `npm run format` — Prettier formatting for resources/
+
+### Code Generation
+- `php artisan make:model ModelName --no-interaction` — always pass `--no-interaction`
+- `php artisan make:test --pest TestName` — create Pest feature test
+- `php artisan make:test --pest --unit TestName` — create Pest unit test
+
+## Architecture
+
+### Backend (Laravel 12)
+- **Routing**: `bootstrap/app.php` (middleware, exceptions), `routes/web.php`, `routes/settings.php`
+- **Auth**: Laravel Fortify with 2FA — actions in `app/Actions/Fortify/`, provider in `app/Providers/FortifyServiceProvider.php`
+- **Controllers**: `app/Http/Controllers/Settings/` for profile, password, 2FA
+- **Validation**: Form Request classes in `app/Http/Requests/Settings/` — always use these, not inline validation
+- **Middleware**: configured in `bootstrap/app.php` — `HandleAppearance`, `HandleInertiaRequests`
+- **Database**: SQLite by default, tests use in-memory SQLite
+
+### Frontend (Vue 3 + Inertia v2)
+- **Pages**: `resources/js/pages/` — Inertia renders these via `Inertia::render('PageName')`
+- **Layouts**: `resources/js/layouts/` — `AppLayout.vue` (main), `AuthLayout.vue` (auth pages)
+- **Components**: `resources/js/components/` — reusable components, `components/ui/` for shadcn-vue primitives
+- **Composables**: `resources/js/composables/` — Vue 3 composition API hooks
+- **Wayfinder routes**: `resources/js/actions/` (controller actions), `resources/js/routes/` (named routes) — auto-generated, do not edit
+- **Types**: `resources/js/types/` — shared TypeScript type definitions
+- **Path alias**: `@/*` maps to `resources/js/*`
+
+### UI Framework
+- shadcn-vue (new-york-v4 style) with reka-ui headless primitives
+- Tailwind CSS v4 via Vite plugin (no `tailwind.config.js` — config in CSS)
+- lucide-vue-next icons
+- Dark mode via Tailwind dark class + `appearance` cookie
+
+### Key Patterns
+- Inertia v2 features: deferred props (use skeleton loading states), prefetching, polling, `WhenVisible`
+- Wayfinder: import from `@/actions/` or `@/routes/` for type-safe route access in Vue components
+- Fortify provides headless auth routes automatically — login, register, password reset, email verification, 2FA challenge
+- Form Requests use array-based validation rules (check sibling files for convention)
+- Model casts defined via `casts()` method, not `$casts` property
+
+===
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
@@ -20,6 +84,12 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/sail (SAIL) - v1
 - pestphp/pest (PEST) - v4
 - phpunit/phpunit (PHPUNIT) - v12
+- @inertiajs/vue3 (INERTIA) - v2
+- tailwindcss (TAILWINDCSS) - v4
+- vue (VUE) - v3
+- @laravel/vite-plugin-wayfinder (WAYFINDER) - v0
+- eslint (ESLINT) - v9
+- prettier (PRETTIER) - v3
 
 ## Skills Activation
 
@@ -27,6 +97,8 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 - `wayfinder-development` — Activates whenever referencing backend routes in frontend components. Use when importing from @/actions or @/routes, calling Laravel routes from TypeScript, or working with Wayfinder route functions.
 - `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, browser testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
+- `inertia-vue-development` — Develops Inertia.js v2 Vue client-side applications. Activates when creating Vue pages, forms, or navigation; using &lt;Link&gt;, &lt;Form&gt;, useForm, or router; working with deferred props, prefetching, or polling; or when user mentions Vue with Inertia, Vue pages, Vue forms, or Vue navigation.
+- `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 - `developing-with-fortify` — Laravel Fortify headless authentication backend development. Activate when implementing authentication features including login, registration, password reset, email verification, two-factor authentication (2FA/TOTP), profile updates, headless auth, authentication scaffolding, or auth guards in Laravel applications.
 
 ## Conventions
@@ -145,6 +217,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - Inertia creates fully client-side rendered SPAs without modern SPA complexity, leveraging existing server-side patterns.
 - Components live in `resources/js/Pages` (unless specified in `vite.config.js`). Use `Inertia::render()` for server-side routing instead of Blade views.
 - ALWAYS use `search-docs` tool for version-specific Inertia documentation and updated code examples.
+- IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
 
 === inertia-laravel/v2 rules ===
 
@@ -262,6 +335,21 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 - Do NOT delete tests without approval.
 - CRITICAL: ALWAYS use `search-docs` tool for version-specific Pest documentation and updated code examples.
 - IMPORTANT: Activate `pest-testing` every time you're working with a Pest or testing-related task.
+
+=== inertia-vue/core rules ===
+
+# Inertia + Vue
+
+Vue components must have a single root element.
+- IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
+
+=== tailwindcss/core rules ===
+
+# Tailwind CSS
+
+- Always use existing Tailwind conventions; check project patterns before adding new ones.
+- IMPORTANT: Always use `search-docs` tool for version-specific Tailwind CSS documentation and updated code examples. Never rely on training data.
+- IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
 
 === laravel/fortify rules ===
 
